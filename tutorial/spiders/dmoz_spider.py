@@ -11,21 +11,15 @@ import re
 class DmozSpider(Spider):
     name = "dmoz"
     allowed_domains = ["baidu.com"]
-    '''
+    
     f = codecs.open('./data.txt','r','utf-8')
     urls = []
-    count = 0
     for eachline in f:
-        count = count + 1
         urls.append(eachline)
-        if count==10:
-            break
-    count = 0
-    print 'len is ' + str(len(urls))
-    f.close()
-    '''
-    #print start_urls
-    
+    count = -1
+
+    print 'url len is ' + str(len(urls))
+    f.close()    
     
     start_urls = [
         #"http://baike.baidu.com/subview/2188/5215542.htm"
@@ -44,46 +38,56 @@ class DmozSpider(Spider):
         # there may check for the GET status
         if response.url.find('verify')>-1:
             print 'crawler is blocked by the server'
-
+            return
+        
         #second, check if the entry searched is exist in Baike
         sel = Selector(response)
         badreq = sel.xpath('//div[@class="direct_holder"]/p/text()').extract()
         notinbaike = '未收录'
         if badreq[0].encode('utf-8').find(notinbaike) > -1:
             print 'this entry is not in baike'
-            
-            return
-        #title = sel.xpath('//h1[@class="title"]/text()').extract()
-        #print title
-
-        #third, if the entry has multiple sub-entries
-        lemma_list = sel.xpath('//div[@id="lemma-list"]/ul/li/p/a').extract()
-        if lemma_list:
-            print 'find lemma_list'
-        else:
-            print 'can not find lemma_list'
-            parsebaike =  ParseBaike()
-            parsebaike.parse_text(response)
+            if self.count < 8549:
+                self.count = self.count + 1
+                print 'current count is '+ str(self.count)
+                yield Request(self.url[self.count],callback=self.parse)
             return
 
         reg = '<a(.*)href="(.*)"(.*)>(.*)</a>'
         subtext = '游戏'
+        #third, if the entry has multiple sub-entries
+        lemma_list = sel.xpath('//div[@id="lemma-list"]/ul/li/p/a').extract()
+        if lemma_list:
+            print 'find lemma_list'
+            for x in lemma_list:
+                tmp = re.search(reg, x)
+                if tmp.group(4).encode('utf-8').find(subtext) > -1:
+                    eUrl = 'http://baike.baidu.com' + tmp.group(2)
+                    #print eUrl, tmp.group(4)
+                    yield Request(eUrl,callback=self.parse)
+        #fourth, if it is truly an entry
+        else:
+            print 'can not find lemma_list'
+            parsebaike =  ParseBaike()
+            parsebaike.parse_text(response)
 
-        for x in lemma_list:
-            #print x
-            tmp = re.search(reg, x)
-            if tmp.group(4).encode('utf-8').find(subtext) > -1:
-                eUrl = 'http://baike.baidu.com' + tmp.group(2)
-                #print eUrl, tmp.group(4)
-                yield Request(eUrl,callback=self.parse)
+            relatedUrl = sel.xpath('//div[@class="zhixin-list zhixin-list-3"]/div/p/a').extract()
+            if relatedUrl:
+                print 'find related items'
+                for rUrl in relatedUrl:
+                    uu = re.search(reg, rUrl)
+                    yield Request(uu.group(2),callback=self.parse)  
+            else :
+                print 'can not find related items'
+
+        if self.count < 8549:
+            self.count = self.count + 1
+            print 'current count is '+ str(self.count)
+            yield Request(self.url[self.count],callback=self.parse)
+
+
+        
         #print title[0]
-        relatedUrl = sel.xpath('//div[@class="zhixin-list zhixin-list-3"]/div/p/a').extract()
-        if relatedUrl:
-            print 'find related items'
-        else :
-            print 'can not find related items'
-        for x in relatedUrl:
-            print x
+        
         #print 'count is '+ str(self.count)
         #self.count = self.count + 1
         #parsebaike = ParseBaike()
