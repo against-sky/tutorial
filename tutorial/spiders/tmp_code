@@ -1,0 +1,46 @@
+f = codecs.open('out.txt','a','utf-8');
+
+
+        sel = Selector(response)
+        #sites = sel.xpath('//ul/li')
+        name_array = sel.xpath('//div[@class="lemmaTitleH1"]/text()').extract()
+        introduction = sel.xpath('//div[@class="card-summary-content"]/*').extract()
+        main_content = sel.xpath('//div[@class="lemma-main-content rainbowlemma--"]/*').extract()
+        print 'this is url: ' + response.url
+
+        c = ''
+        for x in main_content:
+            c = c + x
+            #print x
+        #print c
+
+        myparse = Myparse()
+        #print introduction[0],'hah\n', introduction[1]
+        result = myparse.parseIntro(introduction)
+        baike = BaikeParser()
+        '''baike.feed(c)
+        for x in range(0, len(baike.title)):
+            print baike.title[x]
+            print baike.content[x]'''
+
+        writeDataBase = ToMongo()
+        writeDataBase.insert(name_array[0], result, response.url)
+        #print introduction[0]
+        #a = '你好';
+        #b = u'\u5929\u5929\u9177\u8dd1';
+        #print name[0]#.encode('utf-8'), a ,b,name[0]
+        f.write(introduction[0]+'\n')
+        f.write(result)
+        f.close()
+        '''
+        items = []
+        for site in sites:
+            item = DmozItem()
+            item['title'] = site.xpath('a/text()').extract()
+            item['link'] = site.xpath('a/@href').extract()
+            item['desc'] = site.xpath('text()').extract()
+            items.append(item)
+        return items
+        '''
+
+            <!--
