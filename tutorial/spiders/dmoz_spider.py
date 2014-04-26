@@ -58,6 +58,7 @@ class DmozSpider(Spider):
         lemma_list = sel.xpath('//div[@id="lemma-list"]/ul/li/p/a').extract()
         if lemma_list:
             print 'find lemma_list'
+            #it may need to store this page
             for x in lemma_list:
                 tmp = re.search(reg, x)
                 if tmp.group(4).encode('utf-8').find(subtext) > -1:
