@@ -3,6 +3,7 @@ from pymongo import *
 from scrapy.selector import Selector
 from HTMLParser import HTMLParser
 import codecs
+import time
 
 class ParseBaikeIntroduction(object):
 	"""docstring for ParseBaikeIntroduction"""
@@ -89,21 +90,23 @@ class ParseBaike(object):
 		is_exist  = self.db.baidu.find_one({ 'url':url })
 		if is_exist == None:
 			data = { 'name' :name, 'des' : introduction, 'url': url }
-			self.db.baidu.insert(data)
+			self.db.BaiduBaike.insert(data)
 			print 'create entry for ' + name
+			print 'url is ' + url
 			return 1
 		else:
 			print 'game :'+ name + ' is already exists'
+			print 'url is ' + url
 			return 0
 
-	def update_entry(self,sub_titles,sub_contents,name):
+	def update_entry(self, sub_titles, sub_contents, url):
 		
 		dic = []
 		for x in xrange(0,len(sub_contents)):
 			prop = { 'title': sub_titles[x],'content':sub_contents[x] }
 			dic.append(prop)
 		#print dic
-		self.db.baidu.update({'name':name},{ '$push': { 'property' : { '$each' : dic}}})
+		self.db.BaiduBaike.update({'url': url},{ '$push': { 'property' : { '$each' : dic}}})
 
 	def parse_text(self, html_data):
 		url = html_data.url.split('?')[0]
@@ -126,9 +129,11 @@ class ParseBaike(object):
 		for text in tmp_content:
 			temp = temp + text
 		parse_content.feed(temp)
+
 		sub_titles = parse_content.title
 		sub_contents = parse_content.content
-		self.update_entry(sub_titles,sub_contents,title)
+		self.update_entry(sub_titles, sub_contents, url)
+		
 		'''
 		print title
 		print introduction
@@ -138,7 +143,9 @@ class ParseBaike(object):
 			print sub_contents[x]
 		print len(sub_titles),len(sub_contents)
 		'''
-		f = codecs.open('./data/'+title+'.txt','w','utf-8')
+
+		ctime = str(time.time()*10).split('.')
+		f = codecs.open('./data/'+title+'_'+ctime[0]+'.html','w','utf-8')
 		f.write(html_data.body.decode('utf-8'))
 		f.close()
 
